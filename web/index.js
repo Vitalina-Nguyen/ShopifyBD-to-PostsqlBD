@@ -42,27 +42,47 @@ app.get("/api/products/all", async (_req, res) => {
   const session = res.locals.shopify.session;
 
   try {
-    const allProducts = await shopify.api.rest.Product.all({session: session});
-    
-    allProducts.forEach( async product => {
+    const allProducts = await shopify.api.rest.Product.all({ session: session })
+
+    // console.log(allProducts)
+    const allProductsAdded  = allProducts.map(async product => {
+
+      // insert into products (
+      //   shopify_id, title, description )
+      // values (${product.id}, ${product.title}, ${product.body_html})
+      // on conflict (shopify_id) 
+      // do update 
+      //     set shopify_id = ${product.id},
+      //     title = ${product.title},
+      //     description = ${product.body_html}
+
+      const productData = {
+        title : product.title,
+        shopify_id : product.id, 
+        description : product.body_html
+      }
+
+      console.log(productData)
 
 
-      //dbeaver - менеджер БД (тут можно создать таблицу и визуально видеть данные таблицы)
-
-      const productItem = await sql`
-      insert into products (
-        id, title, description
-      ) values (
-        '${product.id}',
-        '${product.title}',
-        '${product.body_html}',
-      )
-    
-      returning *
+      await sql`
+      update products set ${ 
+        sql( productData, "title", "shopify_id", "description" )}
+        where shopify_id = ${product.id}
       `
-    })
-    // console.log("RESULT: ", )
-    // console.log("//////////////VARIANTS: ",allProducts[0].variants.)
+      await sql`
+      insert into products 
+        (title, shopify_id, description)
+        values (${product.title}, ${product.id}, ${product.body_html})
+        where not exists (select shopify_id from products
+        where shopify_id = ${product.id})
+       `
+      })
+
+  
+      
+    console.log("END ")
+ 
 
 
   } catch (e) {
