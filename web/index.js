@@ -7,7 +7,7 @@ import serveStatic from "serve-static";
 import shopify from "./shopify.js";
 import productCreator from "./product-creator.js";
 import GDPRWebhookHandlers from "./gdpr.js";
-import sql from './db.js'
+import sql from "./db.js";
 
 const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT, 10);
 
@@ -39,52 +39,52 @@ app.use(express.json());
 app.get("/api/products/all", async (_req, res) => {
   let status = 200;
   let error = null;
-  const session = res.locals.shopify.session;
 
   try {
-    const allProducts = await shopify.api.rest.Product.all({ session: session })
+    const allProducts = await shopify.api.rest.Product.all({
+      session: res.locals.shopify.session,
+    });
 
-    // console.log(allProducts)
-    const allProductsAdded  = allProducts.map(async product => {
-
+    // console.log(allProducts);
+    const allProductsAdded = allProducts.map(async (product) => {
       // insert into products (
       //   shopify_id, title, description )
       // values (${product.id}, ${product.title}, ${product.body_html})
-      // on conflict (shopify_id) 
-      // do update 
+      // on conflict (shopify_id)
+      // do update
       //     set shopify_id = ${product.id},
       //     title = ${product.title},
       //     description = ${product.body_html}
 
       const productData = {
-        title : product.title,
-        shopify_id : product.id, 
-        description : product.body_html
-      }
-
-      console.log(productData)
-
+        title: product.title,
+        shopify_id: product.id,
+        description: product.body_html,
+      };
 
       await sql`
-      update products set ${ 
-        sql( productData, "title", "shopify_id", "description" )}
-        where shopify_id = ${product.id}
-      `
-      await sql`
-      insert into products 
-        (title, shopify_id, description)
-        values (${product.title}, ${product.id}, ${product.body_html})
-        where not exists (select shopify_id from products
-        where shopify_id = ${product.id})
-       `
-      })
-
-  
+      update products set 
+        title = ${product.title},
+        shopify_id = ${product.id},
+        description = ${product.body_html}
       
-    console.log("END ")
- 
+        where shopify_id = ${product.id}
+      `;
 
+      let newProduct =
+        await sql` select shopify_id from products where shopify_id = ${product.id} `;
+      if (!newProduct) console.log("NULLLLLLLL");
+      // console.log(newProduct);
 
+      // await sql`
+      // insert into products
+      //   (title, shopify_id, description)
+      //   values (${product.title}, ${product.id}, ${product.body_html})
+
+      //  `;
+    });
+
+    console.log("END ");
   } catch (e) {
     console.log(`Failed to process products/create: ${e.message}`);
     status = 500;
