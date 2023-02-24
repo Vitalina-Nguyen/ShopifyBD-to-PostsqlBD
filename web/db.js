@@ -1,12 +1,15 @@
 import postgres from 'postgres'
+import * as dotenv from 'dotenv';
+dotenv.config()
+import express from "express";
 
 const sql = postgres(
-    'postgres://marvel:kk3251Dn14mqqUoKmrEmG6vwV5QwlbjL@dpg-cfr2erpmbjsgn6tn8ueg-a.oregon-postgres.render.com/shopify_products?ssl=true', {
-    host: 'dpg-cfr2erpmbjsgn6tn8ueg-a.oregon-postgres.render.com',            
+    process.env.URL, {
+    host: process.env.DB_HOST,            
     port: 5432,         
-    database: 'shopify_products',            
-    username: 'marvel',            
-    password: 'kk3251Dn14mqqUoKmrEmG6vwV5QwlbjL',            
+    database: process.env.DATABASE,            
+    username: process.env.DB_USERNAME,            
+    password: process.env.DB_PASSWORD,            
     ssl: true,
 
 }) 
