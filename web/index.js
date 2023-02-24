@@ -45,46 +45,24 @@ app.get("/api/products/all", async (_req, res) => {
       session: res.locals.shopify.session,
     });
 
-    // console.log(allProducts);
     const allProductsAdded = allProducts.map(async (product) => {
-      // insert into products (
-      //   shopify_id, title, description )
-      // values (${product.id}, ${product.title}, ${product.body_html})
-      // on conflict (shopify_id)
-      // do update
-      //     set shopify_id = ${product.id},
-      //     title = ${product.title},
-      //     description = ${product.body_html}
-
-      const productData = {
-        title: product.title,
-        shopify_id: product.id,
-        description: product.body_html,
-      };
 
       await sql`
       update products set 
         title = ${product.title},
         shopify_id = ${product.id},
         description = ${product.body_html}
-      
         where shopify_id = ${product.id}
       `;
 
-      let newProduct =
-        await sql` select shopify_id from products where shopify_id = ${product.id} `;
-      if (!newProduct) console.log("NULLLLLLLL");
-      // console.log(newProduct);
-
-      // await sql`
-      // insert into products
-      //   (title, shopify_id, description)
-      //   values (${product.title}, ${product.id}, ${product.body_html})
-
-      //  `;
+      await sql`
+      insert into products
+        (title, shopify_id, description)
+        select ${product.title}, ${product.id}, ${product.body_html}
+        where not exists (select shopify_id from products where shopify_id = ${product.id})
+       `;
     });
 
-    console.log("END ");
   } catch (e) {
     console.log(`Failed to process products/create: ${e.message}`);
     status = 500;
